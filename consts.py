@@ -3,7 +3,7 @@ MATCH_DF_QUERY = '''
       FROM Match
     '''
 WINS_QUERY = """
-      SELECT season, home_team_api_id, SUM(home_win + away_win) as wins, SUM(draw) as draws, league_id
+      SELECT season, home_team_api_id as row_team_api_id, SUM(home_win + away_win) as wins, SUM(draw) as draws, league_id
       FROM
         (
         SELECT MATCH.id, MATCH.home_team_api_id, Match.season, t1.team_long_name as home_team, t2.team_long_name as away_team,
@@ -24,8 +24,11 @@ BETTING_COLS = ['B365H', 'B365D', 'B365A', 'BWH', 'BWD', 'BWA', 'IWH', 'IWD', 'I
                 'BSA']
 
 IDENTIFICATION_COLS = ['league_id', 'season', 'date', 'match_api_id', 'home_team_api_id', 'away_team_api_id',
-                       'goal_diff']
+                       'goal_diff', 'away_team_goal', 'home_team_goal']
 
 LEAGUE_CONSTANT_COLS = ['season', 'league_id']
 
-CONST_SEASON_COLS = LEAGUE_CONSTANT_COLS + ['row_team_wins', 'row_team_draws', 'row_team_league_points']
+SEASON_COLS = ['wins', 'draws', 'league_points', 'season_goals']
+
+CONST_SEASON_COLS = LEAGUE_CONSTANT_COLS + ['row_team_wins', 'row_team_draws', 'row_team_league_points',
+                                            'row_team_season_goals']

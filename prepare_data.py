@@ -141,6 +141,10 @@ def get_match_data(team_df):
     cols_dict['mean_bet_rival'] = team_df.apply(
         lambda row: row['mean_bet_A'] if row['home'] else row['mean_bet_H'], axis=1)
     cols_dict['mean_bet_draw'] = team_df['mean_bet_D']
+    cols_dict['row_team_rating'] = team_df.apply(
+        lambda row: row['home_team_rating'] if row['home'] else row['away_team_rating'], axis=1)
+    cols_dict['rival_team_rating'] = team_df.apply(
+        lambda row: row['home_team_rating'] if not row['home'] else row['away_team_rating'], axis=1)
     match_data = pd.DataFrame.from_dict(cols_dict)
     return match_data
 

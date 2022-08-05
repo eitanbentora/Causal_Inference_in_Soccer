@@ -1,9 +1,44 @@
 import sqlite3
 import pandas as pd
 from datetime import datetime
-
+import numpy as np
 from consts import WINS_QUERY, MATCH_DF_QUERY, OBSERVED_LEAGUE_ID, BETTING_COLS, IDENTIFICATION_COLS, \
-    LEAGUE_CONSTANT_COLS, CONST_SEASON_COLS, SEASON_COLS
+    LEAGUE_CONSTANT_COLS, CONST_SEASON_COLS, SEASON_COLS, PLAYER_ATT_QUERY
+
+
+def find_closest_past_time_from_time_list(find_time, time_list, return_list):
+    deltas = np.array([(time - find_time).days for time in time_list])
+    if (deltas > 0).all():
+        return return_list[0]
+    neg_deltas = deltas[deltas <= 0]
+    closest_delta = neg_deltas[(np.abs(neg_deltas) <= min(np.abs(neg_deltas)))][0]
+    return return_list[np.argwhere(deltas == closest_delta)[0]][0]
+
+
+def get_player_att_dict(connection, seasons):
+    query = PLAYER_ATT_QUERY
+    player_att_df = pd.read_sql_query(query, connection)
+    format_date_str = "%Y-%m-%d %H:%M:%S"
+    player_att_df['date'] = player_att_df['date'].apply(lambda x: datetime.strptime(x, format_date_str))
+    player_att_df = player_att_df[player_att_df['date'] >= datetime(year=2006, month=1, day=1)]
+    # season_names = seasons
+    # seasons_dates = np.array([datetime(year=int(season.split('/')[0]), month=1, day=1) for season in seasons])
+    # player_att_df['season'] = player_att_df['date'].apply(lambda x: find_closest_season(x, season_names, seasons_dates))
+    return player_att_df[['player_api_id', 'date', 'overall_rating']]
+
+
+def team_score(row, player_att_df, court):
+    player_id_cols = [col for col in row.index if f'{court}_player' in col and 'X' not in col and 'Y' not in col]
+    score = 0
+    for player_col in player_id_cols:
+        player_df = player_att_df[player_att_df['player_api_id'] == row[player_col]]
+        if len(player_df) == 0:
+            continue
+        season = row['season_date']
+        evaluation_times = player_df['date'].to_numpy()
+        scores = player_df['overall_rating'].to_numpy()
+        score += find_closest_past_time_from_time_list(season, evaluation_times, scores)
+    return score / len(player_id_cols)
 
 
 def get_match_df(connection):
@@ -12,6 +47,14 @@ def get_match_df(connection):
     format_date_str = "%Y-%m-%d %H:%M:%S"
     betting_cols = BETTING_COLS
     match_df['date'] = match_df['date'].apply(lambda x: datetime.strptime(x, format_date_str))
+    seasons = match_df.season.unique()
+    match_df['season_date'] = match_df['season'].apply(lambda x: datetime(year=int(x.split('/')[0]), month=1, day=1))
+    player_att_df = get_player_att_dict(connection, seasons)
+    print("a")
+    match_df['home_team_rating'] = match_df.apply(lambda x: team_score(x, player_att_df, 'home'), axis=1)
+    print("b")
+    match_df['away_team_rating'] = match_df.apply(lambda x: team_score(x, player_att_df, 'away'), axis=1)
+    print("c")
     match_df['goal_diff'] = match_df['home_team_goal'] - match_df['away_team_goal']
     identification_cols = IDENTIFICATION_COLS
     cols = identification_cols + betting_cols
@@ -142,6 +185,7 @@ def main():
     season_df = get_season_df(connection, match_df)
     full_match_df = add_season_df_to_match_df(match_df, season_df)
     consecutive_games_df = add_next_game_columns(full_match_df)
+    print(consecutive_games_df.columns)
     consecutive_games_df.to_pickle('data/consecutive_games_df.pkl')
 
 

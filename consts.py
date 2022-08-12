@@ -1,11 +1,15 @@
+FORMAT_DATE_STR = "%Y-%m-%d %H:%M:%S"
+
 OBSERVED_LEAGUE_ID = 1729
 
 BETTING_COLS = ['B365H', 'B365D', 'B365A', 'BWH', 'BWD', 'BWA', 'IWH', 'IWD', 'IWA', 'LBH', 'LBD', 'LBA', 'PSH', 'PSD',
                 'PSA', 'WHH', 'WHD', 'WHA', 'SJH', 'SJD', 'SJA', 'VCH', 'VCD', 'VCA', 'GBH', 'GBD', 'GBA', 'BSH', 'BSD',
                 'BSA']
 
+RATING_COLS = [f'{t}_team_{x}_squad_rating' for x in ['min', 'max', 'mean', 'std', 'median'] for t in ['home', 'away']]
+
 IDENTIFICATION_COLS = ['league_id', 'season', 'date', 'match_api_id', 'home_team_api_id', 'away_team_api_id',
-                       'goal_diff', 'away_team_goal', 'home_team_goal', 'home_team_rating', 'away_team_rating']
+                       'goal_diff', 'away_team_goal', 'home_team_goal'] + RATING_COLS
 
 LEAGUE_CONSTANT_COLS = ['season', 'league_id']
 
